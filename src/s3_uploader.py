@@ -19,25 +19,17 @@ def load_env_variables():
         "s3_bucket_name": os.getenv("S3_BUCKET_NAME"),
     }
 
-# select a random json file from the input data set
-def get_random_json_file(folder_path):
-    json_files = list(Path(folder_path).glob("*.json"))
-    if not json_files:
-        raise FileNotFoundError(f"No JSON files found in {folder_path}")
-    return random.choice(json_files)
-
 
 # upload the selected file to the s3 bucket into uploads folder.
 def upload_to_s3(s3_client, file_path, bucket_name):
     try:
         with open(file_path, "rb") as file:
             s3_client.upload_fileobj(
-                file, bucket_name, f"uploads/{Path(file_path)}"
+                file, bucket_name, f"{Path(file_path)}"
             )
         print(f"Successfully uploaded {file_path} to S3")
     except Exception as e:
         print(f"Error uploading {file_path}: {str(e)}")
-
 
 def main(file_path):
     # Load AWS credentials from .env

@@ -1,0 +1,14 @@
+{
+    "Records": [
+      {
+        "s3": {
+          "bucket": {
+            "name": "ds4300bucket01"
+          },
+          "object": {
+            "key": "picture_01.png"
+          }
+        }
+      }
+    ]
+  }
