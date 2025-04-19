@@ -6,9 +6,10 @@ import s3_uploader
 import os
 
 
-st.set_page_config(page_title="ClipNotes - NBA Play Annotator", page_icon="🏀")
+
+st.set_page_config(page_title="ClipNotes - NBA Annotations", page_icon="🏀")
 # , layout="wide"
-st.markdown("<h1 style='text-align: center; color: red; '>🏀 ClipNotes - NBA Play Annotator 🏀</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: red; '>🏀 ClipNotes - NBA Annotations 🏀</h1>", unsafe_allow_html=True)
 
 st.markdown("<h3 style='text-align: center; color: white; '>Select a Team (Optional)</h3>", unsafe_allow_html=True)
 team_options = nba_api_funcs.get_nba_teams()
