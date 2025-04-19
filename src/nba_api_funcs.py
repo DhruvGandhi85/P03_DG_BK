@@ -2,7 +2,8 @@ from nba_api.stats.endpoints import playbyplay, teamgamelog, leaguegamelog
 from nba_api.stats.static import teams
 import requests
 import streamlit as st
-
+from dotenv import load_dotenv
+import os
 # https://github.com/swar/nba_api/issues/194#issuecomment-755798127
 HEADERS = {
     'Host': 'stats.nba.com',
@@ -17,21 +18,27 @@ HEADERS = {
     'Pragma': 'no-cache',
     'Cache-Control': 'no-cache'
 }
-# proxy_host = "38.153.152.244"
-# proxy_port = "9594"
-# proxy_user = "vjndmcay"
-# proxy_pass = "d7mpey8q2jwi"
-# proxy = f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
-proxy = ""
-	
-@st.cache_data
+
+def load_proxy_env_variables():
+    load_dotenv()
+    proxy_domain = os.getenv("PROXY_DOMAIN")
+    proxy_port = os.getenv("PROXY_PORT")
+    proxy_user = os.getenv("PROXY_USER")
+    proxy_pass = os.getenv("PROXY_PASS")
+    proxy = {
+        "http": f"http://{proxy_user}:{proxy_pass}@{proxy_domain}:{proxy_port}",
+        "https": f"http://{proxy_user}:{proxy_pass}@{proxy_domain}:{proxy_port}"
+    }
+    return proxy
+
+
 def get_nba_teams():
     nba_teams = teams.get_teams()
     team_options = {team['full_name']: (team['abbreviation'], team['id']) for team in nba_teams}
-    return team_options
+    team_options_alphabetical = sorted(team_options.keys())
+    return team_options_alphabetical
 
-@st.cache_data
-def get_recent_league_games(n_recent):
+def get_recent_league_games(n_recent, proxy):
     try:
         log = leaguegamelog.LeagueGameLog(player_or_team_abbreviation='T', headers=HEADERS, proxy=proxy)
         df = log.get_data_frames()[0]
@@ -48,8 +55,8 @@ def get_recent_league_games(n_recent):
         st.error(f"Error getting recent league games: {e}")
         return []
 
-@st.cache_data
-def get_team_recent_games(team_id, n_recent):
+
+def get_team_recent_games(team_id, n_recent, proxy):
     try:
         log = teamgamelog.TeamGameLog(team_id=team_id, headers=HEADERS, proxy=proxy)
         df = log.get_data_frames()[0]
@@ -65,8 +72,8 @@ def get_team_recent_games(team_id, n_recent):
         st.error(f"Error getting recent games for team ID {team_id}: {e}")
         return []
 
-@st.cache_data    
-def get_game_events(game_id):
+
+def get_game_events(game_id, proxy):
     try:
         pbp = playbyplay.PlayByPlay(game_id=game_id, headers=HEADERS, proxy=proxy)
         df = pbp.get_data_frames()[0]
@@ -82,14 +89,18 @@ def get_game_events(game_id):
     except Exception as e:
         st.error(f"Error getting play-by-play for game {game_id}: {e}")
         return []
+    
 
-@st.cache_data
-def get_video_event(game_id, event_id):
+def get_video_event(game_id, event_id, proxies):
     url = f'https://stats.nba.com/stats/videoeventsasset?GameEventID={event_id}&GameID={game_id}'
     try:
-        r = requests.get(url, headers=HEADERS, proxies=proxy)
+        session = requests.Session()
+        session.proxies.update(proxies)
+        session.headers.update(HEADERS)
+        r = session.get(url)
         r.raise_for_status()
         data = r.json()
+
         if data['resultSets']['Meta']['videoUrls'] and data['resultSets']['playlist']:
             video_urls = data['resultSets']['Meta']['videoUrls']
             playlist = data['resultSets']['playlist']
@@ -103,3 +114,4 @@ def get_video_event(game_id, event_id):
     except Exception as e:
         st.error(f"Error getting video for event {event_id}: {e}")
         return None
+

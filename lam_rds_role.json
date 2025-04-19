@@ -1,0 +1,39 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "logs:CreateLogGroup",
+            "Resource": "arn:aws:logs:us-east-1:801002497020:log-group:/aws/lambda/ds4300_02:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:CreateLogStream",
+            "Resource": "arn:aws:logs:us-east-1:801002497020:log-group:/aws/lambda/ds4300_02:*:log-stream:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:PutLogEvents",
+            "Resource": "arn:aws:logs:us-east-1:801002497020:log-group:/aws/lambda/ds4300_02:*:log-stream:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "rds-db:connect",
+            "Resource": "arn:aws:rds-db:us-east-1:801002497020:dbuser:db-UXMJIAP4AJSYK4APAIKIV5TATA/${rds:DbUser}"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "rds-data:ExecuteSql",
+                "rds-data:BeginTransaction",
+                "rds-data:CommitTransaction",
+                "rds-data:RollbackTransaction"
+            ],
+            "Resource": [
+                "arn:aws:rds:us-east-1:801002497020:db:db-UXMJIAP4AJSYK4APAIKIV5TATA",
+                "arn:aws:rds:us-east-1:801002497020:database:db-UXMJIAP4AJSYK4APAIKIV5TATA/*",
+                "arn:aws:rds:us-east-1:801002497020:table:db-UXMJIAP4AJSYK4APAIKIV5TATA/*"
+            ]
+        }
+    ]
+}
