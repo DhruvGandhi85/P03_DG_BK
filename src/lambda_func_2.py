@@ -13,7 +13,6 @@ rds_table_name = 'nba_video'
 s3_client = boto3.client('s3')
 
 def lambda_handler(event, context):
-    total_item_count = 0
 
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
@@ -46,39 +45,43 @@ def lambda_handler(event, context):
                 database=rds_db_name, connect_timeout=10
             )
         except mysql.connector.Error as e:
-            print("ERROR: Could not connect to MySQL instance.", e)
-            return {'statusCode': 500, 'body': 'Error connecting to RDS'}
+            return {'statusCode': 500, 'body': f'Error connecting to RDS {e}'}
 
-        item_count = 0
         if conn.is_connected():
             cursor = conn.cursor()
             try:
-                for event in json_data:
-                    game_id = event.get("game_id")
-                    event_id = event.get("event_id")
-                    video = event.get("video")
-                    video_desc = event.get("desc")
-                    notes = event.get("notes")
+                for event_data in json_data:
+                    game_id = event_data.get("game_id")
+                    event_id = event_data.get("event_id")
+                    video = event_data.get("video")
+                    video_desc = event_data.get("desc")
+                    notes = event_data.get("notes")
 
-                    sql = f"""INSERT INTO {rds_table_name} 
-                    (game_id, event_id, video, video_desc, notes)
-                        VALUES (%s, %s, %s, %s, %s)"""
-                    cursor.execute(sql, (game_id, event_id, video, video_desc, notes))
-                    item_count += 1
+                    check_sql = f'SELECT notes FROM {rds_table_name} WHERE game_id = %s AND event_id = %s'
+                    cursor.execute(check_sql, (game_id, event_id))
+                    existing_notes = cursor.fetchone()
+
+                    if existing_notes:
+                        updated_notes = existing_notes[0]
+                        if notes:
+                            updated_notes = f"{updated_notes}; {notes}"
+                        update_sql = f'UPDATE {rds_table_name} SET notes = %s WHERE game_id = %s AND event_id = %s'
+                        cursor.execute(update_sql, (updated_notes, game_id, event_id))
+                    else:
+                        insert_sql = f'INSERT INTO {rds_table_name} (game_id, event_id, video, video_desc, notes) VALUES (%s, %s, %s, %s, %s)'
+                        cursor.execute(insert_sql, (game_id, event_id, video, video_desc, notes))
 
                 conn.commit()
-                print(f"Inserted {item_count} records into {rds_table_name}")
+                print(f"Processed records in {rds_table_name}")
             except mysql.connector.Error as e:
-                print("ERROR: Could not insert record.", e)
+                print("ERROR: Could not execute database operation.", e)
                 conn.rollback()
-                return {'statusCode': 500, 'body': 'Error inserting into RDS'}
+                return {'statusCode': 500, 'body': 'Error interacting with RDS'}
             finally:
                 cursor.close()
                 conn.close()
 
-        total_item_count += item_count
-
     return {
         'statusCode': 200,
-        'body': f'Successfully processed {total_item_count} record(s)'
+        'body': f'Successfully processed record(s)'
     }

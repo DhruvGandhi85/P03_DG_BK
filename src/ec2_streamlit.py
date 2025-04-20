@@ -140,5 +140,20 @@ elif page == "Community Posts":
 elif page == "Analytics":
     st.markdown("<h1 style='text-align: center; color: red; '>🏀 ClipNotes - NBA Annotations 🏀</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: white; '>Analytics Page</h3>", unsafe_allow_html=True)
-    st.write("This page is under construction.")
 
+    df = fetch_nba_video_data()
+
+    if not df.empty:
+        st.subheader("Distribution of Notes")
+        notes_counts = df['notes'].apply(lambda x: len(x.split())).value_counts().sort_index()
+        fig_notes = px.bar(notes_counts, x=notes_counts.index, y=notes_counts.values,
+                             labels={'x': 'Number of Words in Note', 'y': 'Number of Notes'})
+        st.plotly_chart(fig_notes)
+
+        st.subheader("Number of Annotations per Game")
+        game_counts = df['game_id'].value_counts().sort_values(ascending=False)
+        fig_games = px.bar(game_counts, x=game_counts.index.astype(str), y=game_counts.values,
+                             labels={'x': 'Game ID', 'y': 'Number of Annotations'})
+        st.plotly_chart(fig_games)
+    else:
+        st.info("No annotation data available to display analytics.")
